@@ -8,7 +8,7 @@
 
 1. Criar um emulador de Game Boy.
 
-2. Conseguir que o JCL jogue Pokemon no meu emulador. (Tetris também não era mau.)
+2. Conseguir que o JCL jogue Pokemon no meu emulador. (Tetris também não era mau.) **JCL**: é melhor apontar para o Tetris, para não ser demasiado ambicionso.
 
 ### Repositório de código
 
