@@ -14,7 +14,7 @@
 
 ### UI
 
-![UI](ui.png)
+![UI](ui.jpg)
 
 ### Pacotes
 
