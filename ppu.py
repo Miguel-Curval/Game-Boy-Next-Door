@@ -11,7 +11,7 @@ CLK_PER_OAM_SEARCH = 84         # Mode 2
 CLK_PER_PIXEL_TRANSFER = 172    # Mode 3
 SCROLL_ADJUST = [0, 1, 1, 1, 1, 2, 2, 2]
 
-PALETTE_LOOKUP = [[(palette >> (color_value << 1)) & 0x3 for palette in range(256)] for color_value in range(4)]
+PALETTE_LOOKUP = [[(palette >> (color_value << 1)) & 0x3 for color_value in range(4)] for palette in range(256)]
 
 class PPU:
     def __init__(self):
@@ -96,7 +96,13 @@ class PPU:
     def write_SCX(self, address, value): self.SCX = value
     def write_LY(self, address, value): self.LY = value
     def write_LYC(self, address, value): self.LYC = value
-    def write_DMA(self, address, value): self.DMA = value
+    def write_DMA(self, address, value):
+        self.DMA = value
+        
+        read = self.mmu.read
+        offset = value * 0x100
+        self.OAM[:] = [read(offset + i) for i in range(0xA0)]
+        
     def write_BGP(self, address, value): self.BGP = value
     def write_OBP0(self, address, value): self.OBP0 = value
     def write_OBP1(self, address, value): self.OBP1 = value
@@ -161,7 +167,7 @@ class PPU:
     def draw_line(self):
         ly, wy, scx = self.LY, self.WY, self.SCX
         tiles, vram = self.tiles, self.VRAM
-        palette = self.BGP
+        palette_lut = PALETTE_LOOKUP[self.BGP]
         buffer_index_start = 160 * ly
         tiles_not_overlapped = not self.TILE_SEL
         if self.BG_EN:
@@ -169,14 +175,14 @@ class PPU:
             tile_set_row = bg_y // 8
             tile_set_row_address = (tile_set_row  * 32) | (0x1C00 if self.BG_MAP else 0x1800)
             tile_y = bg_y % 8
-            for i in range(160):
-                bg_x = (i + scx) & 0xFF
+            for x in range(160):
+                bg_x = (x + scx) & 0xFF
                 tile_index = vram[bg_x // 8 | tile_set_row_address]
                 if tiles_not_overlapped:
                     tile_index = 256 + INT8[tile_index]
                 color_value = tiles[tile_index][tile_y][bg_x % 8]
-                raw_color = PALETTE_LOOKUP[color_value][palette]
-                self.framebuffer[buffer_index_start + i] = raw_color
+                raw_color = palette_lut[color_value]
+                self.framebuffer[buffer_index_start + x] = raw_color
         if self.WIN_EN and wy <= ly:
             win_x_start = (self.WX - 7) & 0xFF
             win_y = ly - wy
@@ -191,7 +197,43 @@ class PPU:
                 if tiles_not_overlapped:
                     tile_index = 256 + INT8[tile_index]
                 color_value = tiles[tile_index][tile_y][win_x % 8]
-                raw_color = PALETTE_LOOKUP[color_value][palette]
+                raw_color = palette_lut[color_value]
+                self.framebuffer[buffer_index_start + x] = raw_color
+
+    def draw_line(self):
+        ly, wy, scx = self.LY, self.WY, self.SCX
+        tiles, vram = self.tiles, self.VRAM
+        palette_lut = PALETTE_LOOKUP[self.BGP]
+        buffer_index_start = 160 * ly
+        tiles_not_overlapped = not self.TILE_SEL
+        if self.BG_EN:
+            bg_y = (ly + self.SCY) & 0xFF
+            tile_set_row = bg_y // 8
+            tile_set_row_address = (tile_set_row  * 32) | (0x1C00 if self.BG_MAP else 0x1800)
+            tile_y = bg_y % 8
+            for x in range(160):
+                bg_x = (x + scx) & 0xFF
+                tile_index = vram[bg_x // 8 | tile_set_row_address]
+                if tiles_not_overlapped:
+                    tile_index = 256 + INT8[tile_index]
+                color_value = tiles[tile_index][tile_y][bg_x % 8]
+                raw_color = palette_lut[color_value]
+                self.framebuffer[buffer_index_start + x] = raw_color
+        if self.WIN_EN and wy <= ly:
+            win_x_start = (self.WX - 7) & 0xFF
+            win_y = ly - wy
+            tile_set_row = y // 8
+            tile_set_row_address = (tile_set_row  * 32) | (0x1C00 if self.WIN_MAP else 0x1800)
+            tile_y = y % 8
+            for x in range(win_x_start, 160):
+                win_x = (x + scx) & 0xFF
+                if win_x >= win_x_start:
+                    win_x = x - win_x_start
+                tile_index = vram[win_x // 8 | tile_set_row_address]
+                if tiles_not_overlapped:
+                    tile_index = 256 + INT8[tile_index]
+                color_value = tiles[tile_index][tile_y][win_x % 8]
+                raw_color = palette_lut[color_value]
                 self.framebuffer[buffer_index_start + x] = raw_color
                 
 
@@ -201,11 +243,11 @@ class PPU:
             obj_y, obj_x, tile_index, obj_attrs = self.OAM[i:i+4]
             flip_x, flip_y = BIT5[obj_attrs], BIT6[obj_attrs]
             has_priority = not BIT7[obj_attrs]
-            palette = self.OBP1 if BIT4[obj_attrs] else self.OBP0
+            palette_lut = PALETTE_LOOKUP[self.OBP1 if BIT4[obj_attrs] else self.OBP0]
             start_x, start_y = obj_x - 8, obj_y - 16
             for y in range(obj_height):
                 screen_y = start_y + y
-                if 0 <= screen_y < HEIGHT:
+                if 0 <= screen_y < 144:
                     tile_y = obj_height - y - 1 if flip_y else y
                     y_index = screen_y * 160
                     for x in range(8):
@@ -216,7 +258,7 @@ class PPU:
                             if screen_x < 160:
                                 index = y_index + screen_x
                                 if has_priority or not self.framebuffer[index]:
-                                    raw_color = PALETTE_LOOKUP[color_value][palette]
+                                    raw_color = palette_lut[color_value]
                                     if raw_color != self.framebuffer[index]:
                                         self.framebuffer[index] = raw_color
                                         

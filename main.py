@@ -47,9 +47,9 @@ def main():
                     gb.joypad.direction_down(0x4)
                 elif event.key == pygame.K_DOWN:
                     gb.joypad.direction_down(0x8)
-                elif event.key == pygame.K_z:
-                    gb.joypad.button_down(0x1)
                 elif event.key == pygame.K_x:
+                    gb.joypad.button_down(0x1)
+                elif event.key == pygame.K_z:
                     gb.joypad.button_down(0x2)
                 elif event.key == pygame.K_BACKSPACE:
                     gb.joypad.button_down(0x4)
@@ -64,9 +64,9 @@ def main():
                     gb.joypad.direction_up(0x4)
                 elif event.key == pygame.K_DOWN:
                     gb.joypad.direction_up(0x8)
-                elif event.key == pygame.K_z:
-                    gb.joypad.button_up(0x1)
                 elif event.key == pygame.K_x:
+                    gb.joypad.button_up(0x1)
+                elif event.key == pygame.K_z:
                     gb.joypad.button_up(0x2)
                 elif event.key == pygame.K_BACKSPACE:
                     gb.joypad.button_up(0x4)

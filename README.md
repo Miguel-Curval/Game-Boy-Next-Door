@@ -20,6 +20,14 @@ IMPORTANTE: Para já é NECESSÁRIO PyPy para conseguir ter frames por segundo e
 
 ![UI](ui.png)
 
+### Controlos
+
+- **Setas**: <kbd>&uarr;</kbd> <kbd>&darr;</kbd> <kbd>&larr;</kbd> <kbd>&rarr;</kbd>
+- **A**: <kbd>X</kbd>
+- **B**: <kbd>Z</kbd>
+- **Start**: <kbd>Enter</kbd>
+- **Select**: <kbd>Backspace</kbd>
+
 ### Pacotes
 
 - Pygame
@@ -35,9 +43,9 @@ IMPORTANTE: Para já é NECESSÁRIO PyPy para conseguir ter frames por segundo e
 7. [x] Joypad e controlos.
 8. [x] Fazer decouple do Pygame e do PPU.
 9. [x] Reimplementar o framebuffer para melhor eficiência. (Fiz magia, está MUITO eficiente mesmo.)
-10. [ ] Sprite rendering.
+10. [x] Sprite rendering.
     1. [x] Em princípio o PPU já desenha os sprites da Object Attribute Memory, falta só ter sprites na OAM para desenhar em primeiro lugar.
-    2. [ ] Direct Memory Access. É raro sprites serem passados para a OAM manualmente, logo sem OAM DMA não há sprites.
+    2. [x] Direct Memory Access. É raro sprites serem passados para a OAM manualmente, logo sem OAM DMA não há sprites.
 11. [ ] Accurate sprite rendering.
     1. [ ] Limite de 10 sprites por linha.
     2. [ ] Efeitos mid-frame.
