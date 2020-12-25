@@ -19,7 +19,7 @@ IMPORTANTE: Para já é NECESSÁRIO PyPy para conseguir ter frames por segundo e
 ### UI
 
 ![Tetris](screenshots/TETRIS.png)
-![Pokemon Red](screenshots/POKEMON RED.png)
+![Pokemon Red](screenshots/POKEMON_RED.png)
 ![Pokemon Gold](screenshots/POKEMON_GLDAAUJ.png)
 ![The Legend of Zelda - Link's Awakening](screenshots/ZELDA.png)
 
