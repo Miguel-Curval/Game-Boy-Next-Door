@@ -186,9 +186,9 @@ class PPU:
         if self.WIN_EN and wy <= ly:
             win_x_start = (self.WX - 7) & 0xFF
             win_y = ly - wy
-            tile_set_row = y // 8
+            tile_set_row = win_y // 8
             tile_set_row_address = (tile_set_row  * 32) | (0x1C00 if self.WIN_MAP else 0x1800)
-            tile_y = y % 8
+            tile_y = win_y % 8
             for x in range(win_x_start, 160):
                 win_x = (x + scx) & 0xFF
                 if win_x >= win_x_start:
@@ -222,9 +222,9 @@ class PPU:
         if self.WIN_EN and wy <= ly:
             win_x_start = (self.WX - 7) & 0xFF
             win_y = ly - wy
-            tile_set_row = y // 8
+            tile_set_row = win_y // 8
             tile_set_row_address = (tile_set_row  * 32) | (0x1C00 if self.WIN_MAP else 0x1800)
-            tile_y = y % 8
+            tile_y = win_y % 8
             for x in range(win_x_start, 160):
                 win_x = (x + scx) & 0xFF
                 if win_x >= win_x_start:
@@ -238,7 +238,8 @@ class PPU:
                 
 
     def draw_sprites(self):
-        obj_height = 16 if self.OBJ_SIZE else 8
+        tall_sprites = self.OBJ_SIZE
+        obj_height = 16 if tall_sprites else 8
         for i in range(0, 0xA0, 4):
             obj_y, obj_x, tile_index, obj_attrs = self.OAM[i:i+4]
             flip_x, flip_y = BIT5[obj_attrs], BIT6[obj_attrs]
@@ -249,13 +250,16 @@ class PPU:
                 screen_y = start_y + y
                 if 0 <= screen_y < 144:
                     tile_y = obj_height - y - 1 if flip_y else y
+                    if tall_sprites:
+                        tile_y &= 0x7
+                        tile_index = tile_index & 0xFE if y < 8 else tile_index | 0x1
                     y_index = screen_y * 160
                     for x in range(8):
                         tile_x = 7 - x if flip_x else x
                         color_value = self.tiles[tile_index][tile_y][tile_x]
                         if color_value:
                             screen_x = start_x + x
-                            if screen_x < 160:
+                            if 0 <= screen_x < 160:
                                 index = y_index + screen_x
                                 if has_priority or not self.framebuffer[index]:
                                     raw_color = palette_lut[color_value]

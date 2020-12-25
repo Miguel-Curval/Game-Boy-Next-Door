@@ -17,7 +17,8 @@ F_LUT_FF0F = [i & 0xD0 for i in range(256)]
 ZF, NF, HF, CF = BITX[::-1][:4]
 NZF, NCF = [1 if not i else 0 for i in ZF], [1 if not i else 0 for i in CF]
 
-def invalid_opcode(cpu): print(f'INVALID OPCODE: {cpu.PC - 1}')
+def invalid_opcode(cpu):
+    raise Exception('INVALID OPCODE:' + hex(cpu.PC - 1) + ' last read: ' + hex(cpu.mmu.last_read) + ' last read address: ' + hex(cpu.mmu.last_read_address))
 
 def ADD_HL_16(cpu, x):
     hl = cpu.get_HL()

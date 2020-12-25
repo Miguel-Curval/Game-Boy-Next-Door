@@ -18,7 +18,10 @@ IMPORTANTE: Para já é NECESSÁRIO PyPy para conseguir ter frames por segundo e
 
 ### UI
 
-![UI](ui.png)
+![Tetris](screenshots/TETRIS.png)
+![Pokemon Red](screenshots/POKEMON RED.png)
+![Pokemon Gold](screenshots/POKEMON_GLDAAUJ.png)
+![The Legend of Zelda - Link's Awakening](screenshots/ZELDA.png)
 
 ### Controlos
 
@@ -46,13 +49,18 @@ IMPORTANTE: Para já é NECESSÁRIO PyPy para conseguir ter frames por segundo e
 10. [x] Sprite rendering.
     1. [x] Em princípio o PPU já desenha os sprites da Object Attribute Memory, falta só ter sprites na OAM para desenhar em primeiro lugar.
     2. [x] Direct Memory Access. É raro sprites serem passados para a OAM manualmente, logo sem OAM DMA não há sprites.
-11. [ ] Accurate sprite rendering.
+11. [ ] Fully accurate sprite rendering.
     1. [ ] Limite de 10 sprites por linha.
     2. [ ] Efeitos mid-frame.
-    3. [ ] Optimizar. O PPU está ridiculamente accurate, gasta 80% do processing power. Com sprites assim tão precisos vai ficar impossível de correr mesmo com PyPy. Pensar em ideias para algum tipo de cache eficiente, ou talvez até numa heurística (SEM SACRIFICAR PRECISÃO).
+    3. [ ] Cycle-accurate DMA.
+    4. [ ] Optimizar. O PPU está ridiculamente accurate, gasta 80% do processing power. Com sprites assim tão precisos vai ficar impossível de correr mesmo com PyPy. Pensar em ideias para algum tipo de cache eficiente, ou talvez até numa heurística (SEM SACRIFICAR PRECISÃO).
 12. [ ] Implementar os Memory Bank Controllers (circuitos imbutidos em cada cartucho) mais comuns, MBC1 e MBC3 devem cobrir cerca de 60% dos jogos (citation needed, não me lembro onde vi essa estatística).
-    1. [ ] MBC1
-    2. [ ] MBC3
+    1. [x] MBC1
+    2. [x] MBC2
+    3. [x] MBC3
+        1. [x] Tudo menos RTC...
+        2. [ ] Real Time Clock
+    4. [x] MBC5 (Já agora... Só é usado por Game Boy Color que eu saiba, mas não custou implementar.)
 13. [ ] Criar testes automatizados para os diferentes test roms.
     1. [ ] blargg
     2. [ ] mooneye-gb

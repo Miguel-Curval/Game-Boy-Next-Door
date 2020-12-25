@@ -27,7 +27,7 @@ def main():
     scale = 4
     scaled_dimensions = (160 * scale, 144 * scale)
     screen = pygame.display.set_mode(scaled_dimensions)
-    pygame.display.set_caption('Game Boy Next Door')
+    pygame.display.set_caption(f'Game Boy Next Door - {gb.cartridge.title}')
     pygame.display.set_icon(pygame.image.load('GBND.ico'))
     gb_framebuffer = gb.ppu.framebuffer
     scaled_img = pygame.Surface((scaled_dimensions), depth=8)

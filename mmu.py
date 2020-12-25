@@ -6,15 +6,13 @@ class MMU:
         self.apu = apu
         self.joypad = joypad
         self.cartridge = cartridge
-        self.ROM0 = cartridge.ROM0
         self.BOOTROM = [b for b in bootrom]
         self.WRAM = [0] * 0x2000
         self.HRAM = [0] * 0x80
         read_jt = [self.invalid_read] * 0x10000
-        read_jt[:0x8000] = [self.cartridge.read_ROM0] * 0x4000 + [self.cartridge.read_ROMX] * 0x4000
-        read_jt[:0x100] = [self.read_BOOTROM] * 0x100
+        read_jt[:0x8000] = [self.cartridge.MBC.read_ROM0] * 0x4000 + [self.cartridge.MBC.read_ROMX] * 0x4000
         read_jt[0x8000:0xA000] = [self.ppu.read_VRAM] * 0x2000
-        read_jt[0xA000:0xC000] = [self.cartridge.read_RAM] * 0x2000
+        read_jt[0xA000:0xC000] = [self.cartridge.MBC.read_RAM] * 0x2000
         read_jt[0xC000:0xE000] = [self.read_WRAM] * 0x2000
         read_jt[0xE000:0xFE00] = [self.read_ECHO] * 0x1E00
         read_jt[0xFE00:0xFEA0] = [self.ppu.read_OAM] * 0xA0
@@ -24,6 +22,9 @@ class MMU:
         read_jt[0xFF06] = self.timer.read_TMA
         read_jt[0xFF07] = self.timer.read_TAC
         read_jt[0xFF0F] = self.read_IF
+        read_jt[0xFF10:0xFF27] = [self.apu.read_unimplemented] * 0x17
+        read_jt[0xFF30:0xFF40] = [self.apu.read_unimplemented] * 0x10
+        read_jt[0xFF24] = self.apu.read_NR50
         read_jt[0xFF40] = self.ppu.read_LCDC
         read_jt[0xFF41] = self.ppu.read_STAT
         read_jt[0xFF42] = self.ppu.read_SCY
@@ -41,9 +42,10 @@ class MMU:
         read_jt[0xFFFF] = self.read_IE
         self.READ_JUMP_TABLE = read_jt
         write_jt = [self.invalid_write] * 0x10000
-        write_jt[:0x8000] = [self.cartridge.write_ROM0] * 0x4000 + [self.cartridge.write_ROMX] * 0x4000
+        rom_write_jt = cartridge.MBC.get_ROM_write_jump_table()
+        write_jt[:len(rom_write_jt)] = rom_write_jt
         write_jt[0x8000:0xA000] = [self.ppu.write_VRAM] * 0x2000
-        write_jt[0xA000:0xC000] = [self.cartridge.write_RAM] * 0x2000
+        write_jt[0xA000:0xC000] = [self.cartridge.MBC.write_RAM] * 0x2000
         write_jt[0xC000:0xE000] = [self.write_WRAM] * 0x2000
         write_jt[0xE000:0xFE00] = [self.write_ECHO] * 0x1E00
         write_jt[0xFE00:0xFEA0] = [self.ppu.write_OAM] * 0xA0
@@ -53,6 +55,9 @@ class MMU:
         write_jt[0xFF06] = self.timer.write_TMA
         write_jt[0xFF07] = self.timer.write_TAC
         write_jt[0xFF0F] = self.write_IF
+        write_jt[0xFF10:0xFF27] = [self.apu.write_unimplemented] * 0x17
+        write_jt[0xFF30:0xFF40] = [self.apu.write_unimplemented] * 0x10
+        write_jt[0xFF24] = self.apu.write_NR50
         write_jt[0xFF40] = self.ppu.write_LCDC
         write_jt[0xFF41] = self.ppu.write_STAT
         write_jt[0xFF42] = self.ppu.write_SCY
@@ -79,24 +84,34 @@ class MMU:
         if skip_bootrom:
             self.BOOT_OFF = 1
             self.IF = 1
+        else:
+            self.READ_JUMP_TABLE[:0x100] = [self.read_BOOTROM] * 0x100
         
-    def read(self, address): return self.READ_JUMP_TABLE[address](address)
+        
+    def read(self, address):
+        a = self.READ_JUMP_TABLE[address](address)
+        self.last_read = a
+        self.last_read_address = address
+        return a
     def write(self, address, value): self.WRITE_JUMP_TABLE[address](address, value)
 
-    def read_BOOTROM(self, address): return self.ROM0[address] if self.BOOT_OFF else self.BOOTROM[address]
+    def read_BOOTROM(self, address): return self.BOOTROM[address]
     def read_WRAM(self, address): return self.WRAM[address - 0xC000]
     def read_ECHO(self, address): return self.read(address - 0x2000)
-    def read_IF(self, address): return self.IF & 0x1F # JUST FOR TESTS
+    def read_IF(self, address): return self.IF & 0x1F # JUST FOR TESTS, TODO: what the hell is this, research and fix
     def read_BOOT(self, address): return 0xFF
     def read_HRAM(self, address): return self.HRAM[address - 0xFF80]
     def read_IE(self, address): return self.IE
     def invalid_read(self, address):
         print(f'Reading unimplemented address: {hex(address)}')
+        return 0xFF
     
     def write_WRAM(self, address, value): self.WRAM[address - 0xC000] = value
     def write_ECHO(self, address, value): self.write(address - 0x2000, value)
     def write_IF(self, address, value): self.IF = value | 0xE0
-    def write_BOOT(self, address, value): self.BOOT_OFF = True
+    def write_BOOT(self, address, value):
+        self.BOOT_OFF = True
+        self.READ_JUMP_TABLE[:0x100] = [self.cartridge.MBC.read_ROM0] * 0x100
     def write_HRAM(self, address, value): self.HRAM[address - 0xFF80] = value
     def write_IE(self, address, value): self.IE = value
     def invalid_write(self, address, value):

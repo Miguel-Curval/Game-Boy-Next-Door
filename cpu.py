@@ -1,5 +1,4 @@
 from opcodes import OPCODES, OPCODES_CB, CYCLES, CYCLES_BRANCHED, CYCLES_CB
-from helpers import INC16
 
 INTERRUPT_JUMP_VECTORS = [0x40, 0x48, 0x50, 0x58, 0x60]
 
@@ -78,7 +77,7 @@ class CPU:
 
     def fetch_imm8(self):
         data = self.mmu.read(self.PC)
-        self.PC = INC16[self.PC]
+        self.PC = inc16(self.PC)
         return data
     def fetch_imm16(self): return self.fetch_imm8() | (self.fetch_imm8() << 8)
         
