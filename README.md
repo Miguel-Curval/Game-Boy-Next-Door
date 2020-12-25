@@ -18,10 +18,15 @@ IMPORTANTE: Para já é NECESSÁRIO PyPy para conseguir ter frames por segundo e
 
 ### UI
 
-![Tetris](screenshots/TETRIS.png)
-![Pokemon Red](screenshots/POKEMON_RED.png)
-![Pokemon Gold](screenshots/POKEMON_GLDAAUJ.png)
+![Pokemon Gold - JCL's Adventure](screenshots/POKEMON_GOLD_JCL.png)
+![Kirby's Dream Land](screenshots/KIRBY.png)
+![Super Mario Land 2](screenshots/MARIO_LAND_2.png)
+![Super Mario Land](screenshots/MARIO_LAND.png)
 ![The Legend of Zelda - Link's Awakening](screenshots/ZELDA.png)
+![Pokemon Red](screenshots/POKEMON_RED.png)
+![Tetris](screenshots/TETRIS.png)
+![Pokemon Gold](screenshots/POKEMON_GOLD.png)
+![Kirby's Dream Land 2](screenshots/KIRBY_2.png)
 
 ### Controlos
 
