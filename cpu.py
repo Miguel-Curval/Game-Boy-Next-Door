@@ -121,5 +121,6 @@ class CPU:
                         self.IME = False
                         self.call(INTERRUPT_JUMP_VECTORS[i])
                         interrupt_flags &= (bit ^ 0xFF)
+                        break
                 mmu.IF = interrupt_flags
                 

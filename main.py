@@ -77,7 +77,7 @@ def main():
         pygame.transform.scale(img, scaled_dimensions, scaled_img)
         screen.blit(scaled_img, (0, 0))
         pygame.display.flip()
-        #clock.tick_busy_loop(60)
+        #clock.tick(60)
 
 
     

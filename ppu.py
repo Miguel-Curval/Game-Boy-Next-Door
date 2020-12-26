@@ -21,6 +21,8 @@ class PPU:
         self.OAM  = [0] * 0x2000
         
     def reset(self, skip_bootrom=0):
+        self.curr_win_y = 0
+
         self.cycles = CLK_PER_OAM_SEARCH
         self.VRAM[:] = [0] * 0x2000
         self.OAM[:] = [0] * 0x2000
@@ -150,6 +152,7 @@ class PPU:
                     self.LY = 0
                     self.LCD_MODE = OAM_SEARCH
                     self.cycles += CLK_PER_OAM_SEARCH
+                    self.curr_win_y = 0
                     if self.INTR_M2:
                         self.mmu.IF |= 0x2
                 else:
@@ -165,7 +168,7 @@ class PPU:
                 self.mmu.IF |= 0x2
 
     def draw_line(self):
-        ly, wy, scx = self.LY, self.WY, self.SCX
+        ly, wy, wx, scx = self.LY, self.WY, self.WX, self.SCX
         tiles, vram = self.tiles, self.VRAM
         palette_lut = PALETTE_LOOKUP[self.BGP]
         buffer_index_start = 160 * ly
@@ -183,9 +186,9 @@ class PPU:
                 color_value = tiles[tile_index][tile_y][bg_x % 8]
                 raw_color = palette_lut[color_value]
                 self.framebuffer[buffer_index_start + x] = raw_color
-        if self.WIN_EN and wy <= ly:
-            win_x_start = (self.WX - 7) & 0xFF
-            win_y = ly - wy
+        if self.WIN_EN and wy <= ly and wx < 167:
+            win_x_start = wx - 7 if 7 <= wx else 0
+            win_y = self.curr_win_y
             tile_set_row = win_y // 8
             tile_set_row_address = (tile_set_row  * 32) | (0x1C00 if self.WIN_MAP else 0x1800)
             tile_y = win_y % 8
@@ -199,42 +202,7 @@ class PPU:
                 color_value = tiles[tile_index][tile_y][win_x % 8]
                 raw_color = palette_lut[color_value]
                 self.framebuffer[buffer_index_start + x] = raw_color
-
-    def draw_line(self):
-        ly, wy, scx = self.LY, self.WY, self.SCX
-        tiles, vram = self.tiles, self.VRAM
-        palette_lut = PALETTE_LOOKUP[self.BGP]
-        buffer_index_start = 160 * ly
-        tiles_not_overlapped = not self.TILE_SEL
-        if self.BG_EN:
-            bg_y = (ly + self.SCY) & 0xFF
-            tile_set_row = bg_y // 8
-            tile_set_row_address = (tile_set_row  * 32) | (0x1C00 if self.BG_MAP else 0x1800)
-            tile_y = bg_y % 8
-            for x in range(160):
-                bg_x = (x + scx) & 0xFF
-                tile_index = vram[bg_x // 8 | tile_set_row_address]
-                if tiles_not_overlapped:
-                    tile_index = 256 + INT8[tile_index]
-                color_value = tiles[tile_index][tile_y][bg_x % 8]
-                raw_color = palette_lut[color_value]
-                self.framebuffer[buffer_index_start + x] = raw_color
-        if self.WIN_EN and wy <= ly:
-            win_x_start = (self.WX - 7) & 0xFF
-            win_y = ly - wy
-            tile_set_row = win_y // 8
-            tile_set_row_address = (tile_set_row  * 32) | (0x1C00 if self.WIN_MAP else 0x1800)
-            tile_y = win_y % 8
-            for x in range(win_x_start, 160):
-                win_x = (x + scx) & 0xFF
-                if win_x >= win_x_start:
-                    win_x = x - win_x_start
-                tile_index = vram[win_x // 8 | tile_set_row_address]
-                if tiles_not_overlapped:
-                    tile_index = 256 + INT8[tile_index]
-                color_value = tiles[tile_index][tile_y][win_x % 8]
-                raw_color = palette_lut[color_value]
-                self.framebuffer[buffer_index_start + x] = raw_color
+            self.curr_win_y += 1
                 
 
     def draw_sprites(self):
@@ -259,7 +227,7 @@ class PPU:
                         color_value = self.tiles[tile_index][tile_y][tile_x]
                         if color_value:
                             screen_x = start_x + x
-                            if 0 <= screen_x < 160:
+                            if screen_x < 160:
                                 index = y_index + screen_x
                                 if has_priority or not self.framebuffer[index]:
                                     raw_color = palette_lut[color_value]
