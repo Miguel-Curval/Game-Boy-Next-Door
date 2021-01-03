@@ -48,6 +48,10 @@ class Cartridge:
 
     def reset(self):
         self.MBC.reset()
+    
+    def load_RAM(self, ram):
+        self.MBC.RAM_banks = [ram[i:i + self.RAM_bank_size] for i in range(0, self.RAM_size, self.RAM_bank_size)] if self.type[0] != MBC2 else [[b for b in ram]]
+        self.MBC.update_pointers()
         
 
 class MemoryBankController:
@@ -80,7 +84,7 @@ class MemoryBankController:
     def read_ROMX(self, address): return self.ROMX[address & 0x3FFF]
     def read_RAM(self, address): return self.RAM[address & 0x1FFF] if self.RAMG else 0xFF
     def write_RAM(self, address, value):
-        if self.RAMG: self.RAM[address & 0x1FFF] = value
+        if self.RAMG and self.RAM_banks: self.RAM[address & 0x1FFF] = value
 
 class NoMBC(MemoryBankController):
     def read_RAM(self, address): return self.RAM[address & 0x1FFF]
@@ -142,11 +146,11 @@ class MBC5(MemoryBankController):
     def write_0000_1FFF(self, address, value): self.RAMG = value == 0x0A
     def write_2000_2FFF(self, address, value):
         self.ROMB = self.ROMB & 0x100 | value
-        self.update_ROMX_pointer()
+        self.update_pointers()
     def write_3000_3FFF(self, address, value):
         self.ROMB = value << 8 | self.ROMB & 0xFF
-        self.update_ROMX_pointer()
+        self.update_pointers()
     def write_4000_5FFF(self, address, value):
         self.RAMB = value & 0xF
-        self.update_RAM_pointer()
+        self.update_pointers()
     def get_ROM_write_jump_table(self): return [self.write_0000_1FFF] * 0x2000 + [self.write_2000_2FFF] * 0x1000 + [self.write_3000_3FFF] * 0x1000 + [self.write_4000_5FFF] * 0x2000
