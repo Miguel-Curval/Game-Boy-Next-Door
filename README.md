@@ -75,3 +75,4 @@ IMPORTANTE: Para já é NECESSÁRIO PyPy para conseguir ter frames por segundo e
 16. [ ] As jump tables da MMU estão hacky, tudo o que é lido pela MMU tem de receber um argumento extra. Arranjar maneira de alterar isto sem sacrificar performance, acessos à memória são muito comuns.
 17. [ ] LIMPAR O CÓDIGO, FAZ DOER OS OLHOS E OS NEURÓNIOS (Está praticamente encriptado, o Guido teria um ataque.)
 18. [ ] Áudio e APU. (Não vou ter tempo para implementar áudio, talvez depois da deadline.)
+19. [x] Saves.
