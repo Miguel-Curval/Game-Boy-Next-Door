@@ -1,4 +1,5 @@
 ROM_BANK_SIZE = 0x4000
+RAM_BANK_SIZE = 0x2000
 
 class Cartridge:
     def __init__(self, rom):
@@ -30,7 +31,7 @@ class Cartridge:
             0x52: 72, 0x53: 80, 0x54: 96}[rom[0x148]]
         self.ROM_size = self.ROM_bank_num * ROM_BANK_SIZE
 
-        self.RAM_bank_size, self.RAM_bank_num = [
+        self.RAM_size, self.RAM_bank_num = [
             (         0,  0),
             (  2 * 1024,  1),
             (  8 * 1024,  1),
@@ -38,20 +39,15 @@ class Cartridge:
             (128 * 1024, 16),
             ( 64 * 1024,  8)
         ][rom[0x149]]
-        self.RAM_size = self.RAM_bank_size * self.RAM_bank_num
 
         self.ROM_banks = [rom[i:i + ROM_BANK_SIZE] for i in range(0, self.ROM_size, ROM_BANK_SIZE)]
-        self.RAM_banks = [[0] * self.RAM_bank_size for i in range(self.RAM_bank_num)]
+        self.RAM_banks = [[0] * RAM_BANK_SIZE for i in range(self.RAM_bank_num)]
 
         self.MBC = self.type[0](self)
         self.reset()
 
     def reset(self):
         self.MBC.reset()
-    
-    def load_RAM(self, ram):
-        self.MBC.RAM_banks = [ram[i:i + self.RAM_bank_size] for i in range(0, self.RAM_size, self.RAM_bank_size)] if self.type[0] != MBC2 else [[b for b in ram]]
-        self.MBC.update_pointers()
         
 
 class MemoryBankController:
@@ -60,7 +56,6 @@ class MemoryBankController:
         self.ROM_bank_num = cartridge.ROM_bank_num
         self.RAM_banks = cartridge.RAM_banks
         self.RAM_bank_num = cartridge.RAM_bank_num
-        self.RAM_bank_size = cartridge.RAM_bank_size
         self.has_battery = cartridge.has_battery
         self.reset()
     def reset(self):
@@ -73,7 +68,7 @@ class MemoryBankController:
     def reset_RAM(self):
         if self.RAM_bank_num and not self.has_battery:
             for i in range(self.RAM_bank_num):
-                self.RAM_banks[i][:] = [0] * self.RAM_bank_size
+                self.RAM_banks[i][:] = [0] * RAM_BANK_SIZE
     def update_pointers(self):
         limit = self.ROM_bank_num - 1
         self.ROM0 = self.ROM_banks[self.ROM0_pointer & limit]
@@ -85,6 +80,16 @@ class MemoryBankController:
     def read_RAM(self, address): return self.RAM[address & 0x1FFF] if self.RAMG else 0xFF
     def write_RAM(self, address, value):
         if self.RAMG and self.RAM_banks: self.RAM[address & 0x1FFF] = value
+
+    def load_RAM(self, f):
+        if self.has_battery:
+            for i in range(self.RAM_bank_num):
+                self.RAM_banks[i][:] = [int(i) for i in f.read(RAM_BANK_SIZE)]
+    def save_RAM(self, f):
+        if self.has_battery:
+            for i in range(self.RAM_bank_num):
+                f.write(bytearray(self.RAM_banks[i]))
+
 
 class NoMBC(MemoryBankController):
     def read_RAM(self, address): return self.RAM[address & 0x1FFF]
@@ -129,6 +134,13 @@ class MBC2(MemoryBankController):
     def write_RAM(self, address, value):
         if self.RAMG: self.RAM[address & 0x1FF] = value | 0xF0
     def get_ROM_write_jump_table(self): return [self.write_0000_3FFF] * 0x4000
+
+    def load_RAM(self, f):
+        if self.has_battery:
+            self.RAM[:] = [int(i) for i in f.read(512)]
+    def save_RAM(self, f):
+        if self.has_battery:
+            f.write(bytearray(self.RAM))
 
 class MBC3(MemoryBankController):
     def write_0000_1FFF(self, address, value): self.RAMG = value == 0x0A

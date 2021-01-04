@@ -21,6 +21,12 @@ def main():
     
     pygame.init()
     gb = Gameboy(bootrom, rom)
+    try:
+        with open('.'.join(args.rom_path.split('.')[:-1] + ['sav']), 'rb') as f:
+            print('Loading SAV')
+            gb.cartridge.MBC.load_RAM(f)
+    except:
+        pass
 
     from pygame.locals import QUIT, KEYDOWN, KEYUP
     clock = pygame.time.Clock()
@@ -55,6 +61,8 @@ def main():
                     gb.joypad.button_down(0x4)
                 elif event.key == pygame.K_RETURN:
                     gb.joypad.button_down(0x8)
+                elif event.key == pygame.K_PRINT:
+                    take_screenshot(gb_framebuffer)
             elif event.type == KEYUP:
                 if event.key == pygame.K_RIGHT:
                     gb.joypad.direction_up(0x1)
@@ -78,8 +86,11 @@ def main():
         screen.blit(scaled_img, (0, 0))
         pygame.display.flip()
         #clock.tick(60)
-
-
+    with open('.'.join(args.rom_path.split('.')[:-1] + ['sav']), 'wb') as f:
+        gb.cartridge.MBC.save_RAM(f)
+    
+def take_screenshot(screen):
+    pass
     
 if __name__ == '__main__':
     main()
