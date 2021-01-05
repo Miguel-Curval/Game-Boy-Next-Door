@@ -227,7 +227,7 @@ class PPU:
                         color_value = self.tiles[tile_index][tile_y][tile_x]
                         if color_value:
                             screen_x = start_x + x
-                            if screen_x < 160:
+                            if 0 <= screen_x < 160:
                                 index = y_index + screen_x
                                 if has_priority or not self.framebuffer[index]:
                                     raw_color = palette_lut[color_value]
