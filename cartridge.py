@@ -1,3 +1,5 @@
+from datetime import datetime
+
 ROM_BANK_SIZE = 0x4000
 RAM_BANK_SIZE = 0x2000
 
@@ -57,6 +59,9 @@ class MemoryBankController:
         self.RAM_banks = cartridge.RAM_banks
         self.RAM_bank_num = cartridge.RAM_bank_num
         self.has_battery = cartridge.has_battery
+        self.has_RTC = cartridge.has_RTC
+        self.has_RAM = cartridge.has_RAM
+        self.RTC = RTC()
         self.reset()
     def reset(self):
         self.reset_RAM()
@@ -66,20 +71,20 @@ class MemoryBankController:
         self.RAMB = 0
         self.update_pointers()
     def reset_RAM(self):
-        if self.RAM_bank_num and not self.has_battery:
+        if self.has_RAM and not self.has_battery:
             for i in range(self.RAM_bank_num):
                 self.RAM_banks[i][:] = [0] * RAM_BANK_SIZE
     def update_pointers(self):
         limit = self.ROM_bank_num - 1
         self.ROM0 = self.ROM_banks[self.ROM0_pointer & limit]
         self.ROMX = self.ROM_banks[self.ROMB & limit]   
-        if self.RAM_banks: self.RAM = self.RAM_banks[self.RAMB & (self.RAM_bank_num - 1)]
+        if self.has_RAM: self.RAM = self.RAM_banks[self.RAMB & (self.RAM_bank_num - 1)]
 
     def read_ROM0(self, address): return self.ROM0[address]
     def read_ROMX(self, address): return self.ROMX[address & 0x3FFF]
     def read_RAM(self, address): return self.RAM[address & 0x1FFF] if self.RAMG else 0xFF
     def write_RAM(self, address, value):
-        if self.RAMG and self.RAM_banks: self.RAM[address & 0x1FFF] = value
+        if self.RAMG and self.has_RAM: self.RAM[address & 0x1FFF] = value
 
     def load_RAM(self, f):
         if self.has_battery:
@@ -123,7 +128,7 @@ class MBC1(MemoryBankController):
 
 class MBC2(MemoryBankController):
     def reset_RAM(self):
-        self.RAM_banks = [[0xF0] * 512]
+        if not self.has_battery: self.RAM_banks = [[0xF0] * 512]
     def read_RAM(self, address): return self.RAM[address & 0x1FF] | 0xF0 if self.RAMG else 0xFF
     def write_0000_3FFF(self, address, value):
         value &= 0xF
@@ -150,8 +155,13 @@ class MBC3(MemoryBankController):
         self.update_pointers()
     def write_4000_5FFF(self, address, value):
         if value <= 0x3:
+            self.RTC.set_active_register(False)
             self.RAMB = value
             self.update_pointers()
+        elif 0x8 <= value <= 0xC:
+            self.RTC.set_active_register(value)
+    def read_RAM(self, address):
+        return (self.RTC.read_active_register() if self.RTC.active_register else self.RAM[address & 0x1FFF]) if self.RAMG else 0xFF
     def get_ROM_write_jump_table(self): return [self.write_0000_1FFF] * 0x2000 + [self.write_2000_3FFF] * 0x2000 + [self.write_4000_5FFF] * 0x2000 # + [self.write_6000_7FFF] * 0x2000 
 
 class MBC5(MemoryBankController):
@@ -166,3 +176,14 @@ class MBC5(MemoryBankController):
         self.RAMB = value & 0xF
         self.update_pointers()
     def get_ROM_write_jump_table(self): return [self.write_0000_1FFF] * 0x2000 + [self.write_2000_2FFF] * 0x1000 + [self.write_3000_3FFF] * 0x1000 + [self.write_4000_5FFF] * 0x2000
+
+class RTC:
+    def __init__(self):
+        self.reset()
+    def reset(self):
+        self.set_active_register(0)
+    def set_active_register(self, value):
+        self.active_register = value
+    def read_active_register(self):
+        current = datetime.today()
+        return {0:0, 0x8:current.second, 0x9:current.minute, 0xA:current.hour, 0xB:current.day & 0xFF, 0xC:current.day > 0xFF}[self.active_register]

@@ -60,12 +60,12 @@ IMPORTANTE: Para já é NECESSÁRIO PyPy para conseguir ter frames por segundo e
     2. [ ] Efeitos mid-frame.
     3. [ ] Cycle-accurate DMA.
     4. [ ] Optimizar. O PPU está ridiculamente accurate, gasta 80% do processing power. Com sprites assim tão precisos vai ficar impossível de correr mesmo com PyPy. Pensar em ideias para algum tipo de cache eficiente, ou talvez até numa heurística (SEM SACRIFICAR PRECISÃO).
-12. [ ] Implementar os Memory Bank Controllers (circuitos imbutidos em cada cartucho) mais comuns, MBC1 e MBC3 devem cobrir cerca de 60% dos jogos (citation needed, não me lembro onde vi essa estatística).
+12. [x] Implementar os Memory Bank Controllers (circuitos imbutidos em cada cartucho) mais comuns, MBC1 e MBC3 devem cobrir cerca de 60% dos jogos (citation needed, não me lembro onde vi essa estatística).
     1. [x] MBC1
     2. [x] MBC2
     3. [x] MBC3
         1. [x] Tudo menos RTC...
-        2. [ ] Real Time Clock
+        2. [x] Real Time Clock
     4. [x] MBC5 (Já agora... Só é usado por Game Boy Color que eu saiba, mas não custou implementar.)
 13. [ ] Criar testes automatizados para os diferentes test roms.
     1. [ ] blargg
